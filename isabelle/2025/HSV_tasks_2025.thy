@@ -45,7 +45,9 @@ fun cost_opt_NOT :: "circuit \<Rightarrow> nat" where
 text \<open> opt_NOT has complexity O(n) where n is the input circuit's area. \<close>
 
 theorem opt_NOT_linear: "\<exists> a b ::nat. cost_opt_NOT c \<le> a * area c + b"
-  oops
+  using le_add2 by blast
+
+
 
 text \<open> Another optimisation, introduced in the 2021 coursework. This
   optimisation exploits identities like `(a | b) & (a | c) = a | (b & c)` 
@@ -81,7 +83,7 @@ fun cost_factorise :: "circuit \<Rightarrow> nat" where
 text \<open> factorise has complexity O(n) where n is the input circuit's area. \<close>
 
 theorem factorise_linear: "\<exists> a b ::nat. cost_factorise c \<le> a * area c + b"
-  oops
+  using le_add2 by blast
 
 section \<open> Task 2: Palindromic numbers. \<close>
 
@@ -96,15 +98,122 @@ text \<open> Rephrasing the definition of sum10 so that elements
   are peeled off the _end_ of the list, not the start. \<close>
 
 lemma sum10_snoc:
-  "sum10 (ds @ [d]) =  ... sum10 ds ... "
-  oops
+  "sum10 (ds @ [d]) =  d * (10^ length ds) + sum10 ds "
+proof (induction ds)
+  case Nil
+  show ?case by simp
+next 
+  case (Cons a ds)
+  show ?case
+    using local.Cons by force
+qed
 
 text \<open> If ds is a palindrome of even length, then the number it represents is divisible by 11. \<close>
+
+lemma pow10_plus1_dvd11:
+  fixes n :: nat
+  shows "11 dvd (x + x * (10 ^ (2 * n + 1)::nat))"
+proof -
+have "x + x * (10 ^ (2 * n + 1)::nat) = x * (1 + 10 ^ (2 * n + 1)::nat)"
+  by simp
+  then show ?thesis
+proof (induction n arbitrary: x)
+  case 0
+  then show ?case
+    by simp
+next
+  case (Suc n)
+  thm Suc
+  term ?case
+  have "x + x * (10 ^ (2 * n + 1)::nat) = x * (1 + 10 ^ (2 * n + 1)::nat)"
+    by simp
+  then have "11 dvd (x + x * 10 ^ (2 * n + 1))" by fact 
+  have "(10^(2* Suc n + 1) + 1::nat) = (10^(2*n+3) + 1::nat)" 
+    by (metis Suc3_eq_add_3 Suc_eq_plus1 add.commute add_Suc mult_2)
+  then have "... = (10 ^ (2 + (2*n+1)) + 1::nat)"
+    by (simp add: numeral_3_eq_3)
+  then have "... = ((10^2) * (10^(2*n+1)) + 1::nat)"
+  by simp
+  then have "... = (99) * (10^(2*n+1)::nat) + (10^(2*n+1) + 1::nat)"
+    by simp
+  then have "11 dvd (99) * (10^(2*n+1)::nat)"
+    by simp
+  then have "1 + 1 * 10 ^ (2 * n + 1::nat) = 1 * (1 + 10 ^ (2 * n + 1)::nat)" 
+    by simp
+  then have "11 dvd (1 + 1 * (10 ^ (2 * n + 1)::nat))"
+    using Suc.IH \<open>1 + 1 * 10 ^ (2 * n + 1) = 1 * (1 + 10 ^ (2 * n + 1))\<close> by blast
+  thus ?case
+    by (metis Suc.prems \<open>10 ^ (2 * Suc n + 1) + 1 = 10 ^ (2 * n + 3) + 1\<close> \<open>10 ^ (2 * n + 3) + 1 = 10 ^ (2 + (2 * n + 1)) + 1\<close>
+        \<open>10 ^ (2 + (2 * n + 1)) + 1 = 10\<^sup>2 * 10 ^ (2 * n + 1) + 1\<close> \<open>10\<^sup>2 * 10 ^ (2 * n + 1) + 1 = 99 * 10 ^ (2 * n + 1) + (10 ^ (2 * n + 1) + 1)\<close>
+        \<open>11 dvd 99 * 10 ^ (2 * n + 1)\<close> add.commute dvd_add dvd_mult lambda_one)
+  qed
+qed
+
+ 
+
+theorem half_proof: 
+  shows "11 dvd (sum10 (hs @ rev hs))"
+proof (induction hs)
+  case Nil
+  then show ?case try
+    by simp
+next
+  case (Cons d hs)
+  have "sum10 ((d # hs) @ rev (d # hs)) = 10 * sum10 (hs @ (rev hs)) + d * (10 ^ (2* length hs + 1) + 1)" 
+  by (smt (z3) ab_semigroup_add_class.add_ac(1) ab_semigroup_mult_class.mult_ac(1)
+      add.commute add.left_commute add_mult_distrib append.assoc append_Nil length_append
+      length_rev mult.commute mult_2 mult_2_right nat_1_add_1 nat_mult_1 nat_mult_1_right
+      numeral_Bit0 numeral_Bit0_eq_double numeral_Bit1_eq_inc_double numerals(1) power_add
+      power_one_right rev.simps(1,2) rev_append rev_eq_Cons_iff rev_rev_ident
+      sum10.simps(2) sum10_snoc) 
+  then show ?case
+    by (metis add.commute dvd_add dvd_mult2 local.Cons mult.commute mult_numeral_1 numeral_One pow10_plus1_dvd11)
+qed
+
+
+
 theorem dvd11: 
   assumes "even (length ds)"
   assumes "ds = rev ds"
   shows "11 dvd (sum10 ds)"
-  oops
+proof -
+  obtain hs where "ds = hs @ rev hs" and "length hs = length ds div 2"
+  proof -
+    let ?hs = "take (length ds div 2) ds"
+    have "ds = ?hs @ drop (length ds div 2) ds" by simp
+    moreover have "drop (length ds div 2) ds = rev ?hs"
+    proof -
+      have "length ds = 2 * (length ds div 2)" using assms(1) by simp
+      then have "drop (length ds div 2) ds = rev (take (length ds div 2) ds)"
+        using assms(2) 
+        by (metis add_diff_cancel_left' mult_2 rev_take)
+      thus ?thesis by simp
+    qed
+    moreover have "length ?hs = length ds div 2" by simp
+    ultimately show ?thesis using that 
+    by simp
+  qed
+  
+  from `ds = hs @ rev hs` and half_proof show ?thesis by simp
+qed
+
+  
+
+ 
+    
+    
+  
+  
+  
+
+
+
+
+
+
+
+
+
 
 section \<open> Task 3: 3SAT reduction. \<close>
 
@@ -123,7 +232,7 @@ type_synonym query = "clause list"
 text \<open> A valuation is a function from symbols to truth values. \<close>
 type_synonym valuation = "symbol \<Rightarrow> bool"
 
-text \<open> Given a valuation, evaluate a literal to its truth value. \<close>
+text \<open> Given a valuation, evaluate a literal to its truth value. \<close>/home/rahul/
 fun evaluate_literal :: "valuation \<Rightarrow> literal \<Rightarrow> bool"
 where 
   "evaluate_literal \<rho> (x,b) = (\<rho> x = b)"
@@ -205,10 +314,22 @@ where
   "symbols q \<equiv> \<Union> (set (map symbols_clause q))"
 
 
+lemma is_3SAT_reduce_clause:
+  "is_3SAT (snd (reduce_clause x c))" 
+proof (induction c)
+  case Nil
+  then show ?case try
+    by simp
+next
+  case (Cons a c)
+  then show ?case sorry
+qed 
+
+
 text \<open> The reduce function really does return queries in 3SAT form. \<close>
 theorem is_3SAT_reduce:
   "is_3SAT (reduce x q)" 
-  oops
+  oops 
 
 
 text \<open> The reduce function never decreases the number of clauses in a query. \<close>
