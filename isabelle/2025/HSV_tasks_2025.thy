@@ -199,18 +199,6 @@ qed
 
   
 
- 
-    
-    
-  
-  
-  
-
-
-
-
-
-
 
 
 
@@ -232,7 +220,7 @@ type_synonym query = "clause list"
 text \<open> A valuation is a function from symbols to truth values. \<close>
 type_synonym valuation = "symbol \<Rightarrow> bool"
 
-text \<open> Given a valuation, evaluate a literal to its truth value. \<close>/home/rahul/
+text \<open> Given a valuation, evaluate a literal to its truth value. \<close>
 fun evaluate_literal :: "valuation \<Rightarrow> literal \<Rightarrow> bool"
 where 
   "evaluate_literal \<rho> (x,b) = (\<rho> x = b)"
@@ -314,16 +302,40 @@ where
   "symbols q \<equiv> \<Union> (set (map symbols_clause q))"
 
 
+text \<open> (New) making a query from 3SAT clauses is 3SAT. \<close>
+lemma query_3SAT_closed:
+  "is_3SAT A \<and> is_3SAT B \<Longrightarrow> is_3SAT (A @ B)"
+  by auto
+
 lemma is_3SAT_reduce_clause:
   "is_3SAT (snd (reduce_clause x c))" 
-proof (induction c)
-  case Nil
-  then show ?case try
+proof (induction c rule: reduce_clause.induct)
+  print_cases
+  case (1 x l1 l2 l3 l4 c)
+  have S:  "snd (reduce_clause x (l1 # l2 # l3 # l4 # c)) =
+      (let (x',cs) = reduce_clause (x+1) ((x, False) # l3 # l4 # c) in
+  [[(x, True), l1, l2]] @ cs)"
+    by (smt (verit) prod.case_distrib reduce_clause.simps(1) snd_conv split_cong)
+  then have "is_3SAT [[(x, True), l1, l2]]"
     by simp
+  then show ?case using S "1.IH" 
+    by (metis (no_types, lifting) case_prod_conv old.prod.exhaust query_3SAT_closed
+        snd_eqD)
 next
-  case (Cons a c)
+  case ("2_1" x)
   then show ?case sorry
-qed 
+next
+  case ("2_2" x v)
+  then show ?case sorry
+next
+  case ("2_3" x v vb)
+  then show ?case sorry
+next
+  case ("2_4" x v vb vd)
+  then show ?case sorry
+qed
+
+
 
 
 text \<open> The reduce function really does return queries in 3SAT form. \<close>
