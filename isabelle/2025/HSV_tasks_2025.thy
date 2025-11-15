@@ -323,25 +323,37 @@ proof (induction c rule: reduce_clause.induct)
         snd_eqD)
 next
   case ("2_1" x)
-  then show ?case sorry
+  then show ?case
+    by simp
 next
   case ("2_2" x v)
-  then show ?case sorry
+  then show ?case 
+    by simp
 next
   case ("2_3" x v vb)
-  then show ?case sorry
+  then show ?case 
+    by simp
 next
   case ("2_4" x v vb vd)
-  then show ?case sorry
+  then show ?case 
+    by simp
 qed
-
-
 
 
 text \<open> The reduce function really does return queries in 3SAT form. \<close>
 theorem is_3SAT_reduce:
   "is_3SAT (reduce x q)" 
-  oops 
+proof (induction q rule: reduce.induct)
+  print_cases
+  case (1 uu)
+  then show ?case 
+    by simp
+next
+  case (2 x c q)
+  then show ?case 
+    by (metis (no_types, lifting) case_prod_conv is_3SAT_reduce_clause query_3SAT_closed
+        reduce.simps(2) snd_eqD surj_pair)
+qed
 
 
 text \<open> The reduce function never decreases the number of clauses in a query. \<close>
