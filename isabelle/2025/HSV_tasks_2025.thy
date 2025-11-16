@@ -355,10 +355,44 @@ next
         reduce.simps(2) snd_eqD surj_pair)
 qed
 
+lemma reduce_clause_nonempty:
+ "length (snd (reduce_clause x c)) \<ge> 1"
+proof (induction c rule: reduce_clause.induct)
+  print_cases
+  case (1 x l1 l2 l3 l4 c)
+  obtain x' cs where RC: "reduce_clause (x+1) ((x, False) # l3 # l4 # c) = (x', cs)"
+    by (metis surj_pair)
+  have IH: "length (snd (reduce_clause (x+1) ((x, False) # l3 # l4 # c))) \<ge> 1"
+    using "1.IH" by try
+  then have "length cs \<ge> 1" 
+    using RC by simp
+  moreover have "snd (reduce_clause x (l1 # l2 # l3 # l4 # c)) = [[(x, True), l1, l2]] @ cs"
+    using RC by simp
+  ultimately show ?case by simp
+next
+  case ("2_1" x)
+  then show ?case sorry
+next
+  case ("2_2" x v)
+  then show ?case sorry
+next
+  case ("2_3" x v vb)
+  then show ?case sorry
+next
+  case ("2_4" x v vb vd)
+  then show ?case sorry
+qed
 
 text \<open> The reduce function never decreases the number of clauses in a query. \<close>
 theorem "length q \<le> length (reduce x q)"
-  oops
+proof (induction q rule: reduce.induct)
+  case (1 uu)
+  then show ?case
+    by simp
+next
+  case (2 x c q)
+  then show ?case try
+qed
 
 definition "satisfiable q \<equiv> \<exists>\<rho>. evaluate q \<rho>"
 
